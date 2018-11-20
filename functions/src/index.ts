@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin';
 
 admin.initializeApp();
 
-const keepAliveThreshold = 1000;
+const keepAliveThreshold = 15000;
 const currentDate = () => new Date();
 
 export const purgeParties = functions.firestore
