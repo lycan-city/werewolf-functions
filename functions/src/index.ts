@@ -1,7 +1,5 @@
 import * as functions from 'firebase-functions';
-import * as admin from 'firebase-admin';
-
-admin.initializeApp();
+import Db from './db';
 
 const keepAliveThreshold = 15000;
 const currentDate = () => new Date();
@@ -14,7 +12,7 @@ export const purgeParties = functions.firestore
     const { players = {} } = change.after.data();
     if (Object.keys(players).length) return null;
 
-    const db = admin.firestore();
+    const db = Db.getInstance().db;
 
     await db
       .collection('keepAlive')
@@ -29,8 +27,7 @@ export const purgeParties = functions.firestore
   });
 
 export const purgePlayers = functions.https.onRequest(async (_, response) => {
-  const db = admin.firestore();
-  db.settings({ timestampsInSnapshots: true }); // So firebase cli stops complaining
+  const db = Db.getInstance().db;
 
   const playersWithKeepAlive = await db
     .collection('keepAlive')
@@ -39,10 +36,11 @@ export const purgePlayers = functions.https.onRequest(async (_, response) => {
     .then(docs =>
       docs.map(docSnap => {
         const data = docSnap.data();
+        const keepAlive: any = Object.values(data)[0]; // hack, tsc was complaining
         return {
           partyId: docSnap.id,
           uid: Object.keys(data)[0],
-          lastKeepAlive: Object.values(data)[0].toDate(),
+          lastKeepAlive: keepAlive.toDate(),
         };
       })
     );
