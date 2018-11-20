@@ -64,7 +64,12 @@ export const purgePlayers = functions.https.onRequest(async (_, response) => {
         .then(ref => ref.data())
         .catch(() => null);
 
-      console.log('player party', playerParty);
+      console.log('player party: ', playerParty);
+
+      if (!playerParty) {
+        console.error(`party ${player.partyId} is deleted, skipping...`);
+        continue;
+      }
 
       const {
         [player.uid]: playerToRemove,
@@ -75,7 +80,7 @@ export const purgePlayers = functions.https.onRequest(async (_, response) => {
         ...playerParty,
         players: remainingPlayers,
       };
-      console.log(`player will be removed from party ${playerToRemove}`);
+      console.log('player will be removed from party', playerToRemove);
       console.log('party to update', updatedParty);
 
       await db
@@ -88,5 +93,9 @@ export const purgePlayers = functions.https.onRequest(async (_, response) => {
     }
   }
 
-  response.send({ result: 'OK', playersRemoved });
+  response.send({
+    result: 'OK',
+    playersRemoved,
+    playersActive: playersWithKeepAlive.length - playersRemoved.length,
+  });
 });
