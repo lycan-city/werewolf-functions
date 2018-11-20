@@ -3,6 +3,7 @@ import Db from './db';
 
 const keepAliveThreshold = 15000;
 const currentDate = () => new Date();
+const { log, error } = console;
 
 export const purgeParties = functions.firestore
   .document('parties/{partyId}')
@@ -45,7 +46,7 @@ export const purgePlayers = functions.https.onRequest(async (_, response) => {
       })
     );
 
-  console.log('players with keep alive', playersWithKeepAlive);
+  log('players with keep alive', playersWithKeepAlive);
 
   const playersRemoved = [];
 
@@ -54,43 +55,55 @@ export const purgePlayers = functions.https.onRequest(async (_, response) => {
     const msFromLastKeepalive =
       currentDate().getTime() - player.lastKeepAlive.getTime();
 
-    console.log('PASS THRESHOLD', player.uid, msFromLastKeepalive);
-
-    if (msFromLastKeepalive > keepAliveThreshold) {
-      const playerParty = await db
-        .collection('parties')
-        .doc(player.partyId)
-        .get()
-        .then(ref => ref.data())
-        .catch(() => null);
-
-      console.log('player party: ', playerParty);
-
-      if (!playerParty) {
-        console.error(`party ${player.partyId} is deleted, skipping...`);
-        continue;
-      }
-
-      const {
-        [player.uid]: playerToRemove,
-        ...remainingPlayers
-      } = playerParty.players;
-
-      const updatedParty = {
-        ...playerParty,
-        players: remainingPlayers,
-      };
-      console.log('player will be removed from party', playerToRemove);
-      console.log('party to update', updatedParty);
-
-      await db
-        .collection('parties')
-        .doc(player.partyId)
-        .set(updatedParty);
-
-      playersRemoved.push(player);
-      console.log('player removed');
+    if (msFromLastKeepalive < keepAliveThreshold) {
+      log(`player ${player.uid} within time restriction, skipping...`);
+      continue;
     }
+
+    log(`Processing: player ${player.uid}, time: ${msFromLastKeepalive}ms`);
+
+    const playerParty = await db
+      .collection('parties')
+      .doc(player.partyId)
+      .get()
+      .then(ref => ref.data())
+      .catch(() => null);
+
+    log('player party: ', playerParty);
+
+    if (!playerParty) {
+      error(`party ${player.partyId} is deleted, skipping...`);
+      continue;
+    }
+
+    if (playerParty.gameInProgress) {
+      log(`player${player.uid} is in a game in progress, killing...`);
+      await db
+        .collection('games')
+        .doc(player.partyId)
+        .update({ [`${player.uid}.alive`]: false });
+    }
+
+    const {
+      [player.uid]: playerToRemove,
+      ...remainingPlayers
+    } = playerParty.players;
+
+    const updatedParty = {
+      ...playerParty,
+      players: remainingPlayers,
+    };
+
+    log('player will be removed from party', playerToRemove);
+    log('party to update', updatedParty);
+
+    await db
+      .collection('parties')
+      .doc(player.partyId)
+      .set(updatedParty);
+
+    playersRemoved.push(player);
+    log('player removed');
   }
 
   response.send({
