@@ -18,6 +18,6 @@ export default {
       instance = new Db();
     }
 
-    return instance;
+    return instance.db;
   },
 };
