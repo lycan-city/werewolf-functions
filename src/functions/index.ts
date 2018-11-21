@@ -15,25 +15,16 @@ export const purgeParties = functions.firestore
 
     const db = Db.getInstance();
 
-    await db
-      .collection('keepAlive')
-      .doc(context.params.partyId)
-      .delete();
+    await db.deleteKeepAliveById(context.params.partyId);
+    await db.deleteGameById(context.params.partyId);
 
-    await db
-      .collection('games')
-      .doc(context.params.partyId)
-      .delete();
     return change.after.ref.delete();
   });
 
 export const purgePlayers = functions.https.onRequest(async (_, response) => {
   const db = Db.getInstance();
 
-  const keepAliveRecords = await db
-    .collection('keepAlive')
-    .get()
-    .then(querySnap => (querySnap.empty ? [] : querySnap.docs));
+  const keepAliveRecords = await db.getKeepAliveRecords();
 
   const playersWithKeepAlive = keepAliveRecords.map(doc => {
     const data = doc.data();
@@ -60,13 +51,7 @@ export const purgePlayers = functions.https.onRequest(async (_, response) => {
 
     log(`Info: processing player ${player.uid} (${msFromLastKeepalive}ms)`);
 
-    const playerParty = await db
-      .collection('parties')
-      .doc(player.partyId)
-      .get()
-      .then(ref => ref.data())
-      .catch(() => null);
-
+    const playerParty = await db.getPartyById(player.partyId);
     log(`Info: player {${player.uid}} party: `, playerParty.partyId);
 
     if (!playerParty) {
@@ -75,11 +60,8 @@ export const purgePlayers = functions.https.onRequest(async (_, response) => {
     }
 
     if (playerParty.gameInProgress) {
-      log(`Info: player${player.uid} is in a game in progress, killing...`);
-      await db
-        .collection('games')
-        .doc(player.partyId)
-        .update({ [`${player.uid}.alive`]: false });
+      log(`Info: player${player.uid} has a game in progress, killing...`);
+      await db.killPlayerInParty(player.uid, player.partyId);
     }
 
     const {
@@ -93,11 +75,7 @@ export const purgePlayers = functions.https.onRequest(async (_, response) => {
     };
 
     log(`Info: player ${player.uid} will be removed from party`);
-
-    await db
-      .collection('parties')
-      .doc(player.partyId)
-      .set(updatedParty);
+    await db.setParty(player.partyId, updatedParty);
 
     removedPlayers.push(player);
 
@@ -114,10 +92,7 @@ export const purgePlayers = functions.https.onRequest(async (_, response) => {
       ...remainingKeepAlives
     } = keepalive.data();
 
-    await db
-      .collection('keepAlive')
-      .doc(player.partyId)
-      .set(remainingKeepAlives);
+    await db.updatePlayersKeepAlive(player.partyId, remainingKeepAlives);
   }
 
   response.send({
