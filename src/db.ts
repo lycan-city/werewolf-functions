@@ -14,7 +14,8 @@ class Db {
     return this.db
       .collection('keepAlive')
       .get()
-      .then(querySnap => (querySnap.empty ? [] : querySnap.docs));
+      .then(querySnap => (querySnap.empty ? [] : querySnap.docs))
+      .then(docs => docs.map(d => ({ id: d.id, ...d.data() })));
   }
 
   getPartyById(id) {
