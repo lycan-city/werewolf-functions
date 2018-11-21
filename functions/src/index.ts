@@ -30,21 +30,20 @@ export const purgeParties = functions.firestore
 export const purgePlayers = functions.https.onRequest(async (_, response) => {
   const db = Db.getInstance().db;
 
-  const playersWithKeepAlive = await db
+  const keepAliveRecords = await db
     .collection('keepAlive')
     .get()
-    .then(querySnap => (querySnap.empty ? [] : querySnap.docs))
-    .then(docs =>
-      docs.map(docSnap => {
-        const data = docSnap.data();
-        const keepAlive: any = Object.values(data)[0]; // hack, tsc was complaining
-        return {
-          partyId: docSnap.id,
-          uid: Object.keys(data)[0],
-          lastKeepAlive: keepAlive.toDate(),
-        };
-      })
-    );
+    .then(querySnap => (querySnap.empty ? [] : querySnap.docs));
+
+  const playersWithKeepAlive = keepAliveRecords.map(doc => {
+    const data = doc.data();
+    const keepAlive: any = Object.values(data)[0]; // hack, tsc was complaining
+    return {
+      partyId: doc.id,
+      uid: Object.keys(data)[0],
+      lastKeepAlive: keepAlive.toDate(),
+    };
+  });
 
   log('players with keep alive', playersWithKeepAlive);
 
@@ -103,7 +102,27 @@ export const purgePlayers = functions.https.onRequest(async (_, response) => {
       .set(updatedParty);
 
     playersRemoved.push(player);
-    log('player removed');
+    log('player removed from party');
+
+    log('removing from keepalive...');
+    const keepalive = keepAliveRecords.find(r => r.id === player.partyId);
+
+    if (!keepalive) {
+      error(`player ${player.uid} not in keepAlive, skipping...`);
+      continue;
+    }
+
+    const {
+      [player.uid]: keepAliveToRemove,
+      ...remainingKeepAlives
+    } = keepalive.data();
+
+    await db
+      .collection('keepAlive')
+      .doc(player.partyId)
+      .set(remainingKeepAlives);
+
+    log(`player ${player.uid} removed from keepalive...`);
   }
 
   response.send({
