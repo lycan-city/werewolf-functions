@@ -1,6 +1,12 @@
 import { Db } from '../db';
+import { Logger } from '../logger';
 
-export default async (db: Db, logger, getCurrentDate, keepAliveThreshold) => {
+export default async (
+  db: Db,
+  logger: Logger,
+  getCurrentDate,
+  keepAliveThreshold
+) => {
   const keepAliveRecords = await db.getKeepAliveRecords();
 
   const playersWithKeepAlive = keepAliveRecords.map(doc => {
@@ -13,7 +19,7 @@ export default async (db: Db, logger, getCurrentDate, keepAliveThreshold) => {
     };
   });
 
-  logger.log('Info: players with keep alive:', playersWithKeepAlive.length);
+  logger.info('Players with keep alive:', playersWithKeepAlive.length);
 
   const removedPlayers = [];
 
@@ -25,9 +31,7 @@ export default async (db: Db, logger, getCurrentDate, keepAliveThreshold) => {
       continue;
     }
 
-    logger.log(
-      `Info: Processing player {${player.uid}} (${msFromLastKeepalive}ms)`
-    );
+    logger.info(`Processing player {${player.uid}} (${msFromLastKeepalive}ms)`);
 
     const party = await db.getPartyById(player.partyId);
 
@@ -37,20 +41,18 @@ export default async (db: Db, logger, getCurrentDate, keepAliveThreshold) => {
     }
 
     if (party.gameInProgress) {
-      logger.log(
-        `Info: player${player.uid} has a game in progress, killing...`
-      );
+      logger.info(`Player${player.uid} has a game in progress, killing...`);
       await db.killPlayerInGame(player.uid, player.partyId);
     }
 
     const { [player.uid]: playerToRemove, ...remainingPlayers } = party.players;
 
-    logger.log(`Info: player ${player.uid} will be removed from party`);
+    logger.info(`Player ${player.uid} will be removed from party`);
     await db.updatePlayersInParty(player.partyId, remainingPlayers);
 
     removedPlayers.push(player);
 
-    logger.log(`Info: removing player ${player.uid} from keepalive...`);
+    logger.info(`Removing player ${player.uid} from keepalive...`);
     const keepalive = keepAliveRecords.find(r => r.id === player.partyId);
 
     if (!keepalive) {
