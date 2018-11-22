@@ -4,8 +4,8 @@ import { Logger } from '../logger';
 export default async (
   db: Db,
   logger: Logger,
-  getCurrentDate,
-  keepAliveThreshold
+  getCurrentDate: () => Date,
+  keepAliveThreshold: number
 ) => {
   const keepAliveRecords = await db.getKeepAliveRecords();
 
