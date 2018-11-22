@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin';
 
 let instance = null;
 
-class Db {
+export class Db {
   private db: FirebaseFirestore.Firestore;
 
   constructor() {

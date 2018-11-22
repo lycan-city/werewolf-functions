@@ -1,4 +1,6 @@
-export default async ({ db, logger, getCurrentDate, keepAliveThreshold }) => {
+import { Db } from '../db';
+
+export default async (db: Db, logger, getCurrentDate, keepAliveThreshold) => {
   const keepAliveRecords = await db.getKeepAliveRecords();
 
   const playersWithKeepAlive = keepAliveRecords.map(doc => {

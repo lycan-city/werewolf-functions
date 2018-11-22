@@ -23,11 +23,11 @@ export const purgeParties = functions.firestore
   });
 
 export const purgePlayersFn = functions.https.onRequest(async (_, response) => {
-  const payload = await purgePlayers({
+  const payload = await purgePlayers(
     db,
     logger,
-    getCurrentDate: currentDate,
-    keepAliveThreshold,
-  });
+    currentDate,
+    keepAliveThreshold
+  );
   response.send(payload);
 });
