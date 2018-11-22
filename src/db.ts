@@ -66,12 +66,14 @@ class Db {
   }
 }
 
-export default {
-  getInstance: () => {
-    if (!instance) {
-      instance = new Db();
-    }
+const getInstance: () => Db = () => {
+  if (!instance) {
+    instance = new Db();
+  }
 
-    return instance;
-  },
+  return instance;
+};
+
+export default {
+  getInstance,
 };
