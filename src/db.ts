@@ -35,11 +35,13 @@ class Db {
       .update({ [`${playerId}.alive`]: false });
   }
 
-  setParty(partyId, data) {
+  updatePlayersInParty(partyId, players) {
     return this.db
       .collection('parties')
       .doc(partyId)
-      .set(data);
+      .update({
+        players,
+      });
   }
 
   updatePlayersKeepAlive(partyId, players) {

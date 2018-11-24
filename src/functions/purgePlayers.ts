@@ -43,13 +43,8 @@ export default async ({ db, logger, getCurrentDate, keepAliveThreshold }) => {
 
     const { [player.uid]: playerToRemove, ...remainingPlayers } = party.players;
 
-    const updatedParty = {
-      ...party,
-      players: remainingPlayers,
-    };
-
     logger.log(`Info: player ${player.uid} will be removed from party`);
-    await db.setParty(player.partyId, updatedParty);
+    await db.updatePlayersInParty(player.partyId, remainingPlayers);
 
     playersRemoved.push(player);
 
