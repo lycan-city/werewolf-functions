@@ -10,6 +10,7 @@ class Db {
     this.db = admin.firestore();
     this.db.settings({ timestampsInSnapshots: true });
   }
+
   getKeepAliveRecords() {
     return this.db
       .collection('keepAlive')
@@ -27,7 +28,7 @@ class Db {
       .catch(() => null);
   }
 
-  killPlayerInParty(playerId, partyId) {
+  killPlayerInGame(playerId, partyId) {
     return this.db
       .collection('games')
       .doc(partyId)

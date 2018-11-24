@@ -38,7 +38,7 @@ export default async ({ db, logger, getCurrentDate, keepAliveThreshold }) => {
       logger.log(
         `Info: player${player.uid} has a game in progress, killing...`
       );
-      await db.killPlayerInParty(player.uid, player.partyId);
+      await db.killPlayerInGame(player.uid, player.partyId);
     }
 
     const { [player.uid]: playerToRemove, ...remainingPlayers } = party.players;
