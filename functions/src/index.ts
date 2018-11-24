@@ -47,7 +47,7 @@ export const purgePlayers = functions.https.onRequest(async (_, response) => {
 
   log('Info: players with keep alive', playersWithKeepAlive.length);
 
-  const playersRemoved = [];
+  const removedPlayers = [];
 
   for (let i = 0; i < playersWithKeepAlive.length; i++) {
     const player = playersWithKeepAlive[i];
@@ -99,7 +99,7 @@ export const purgePlayers = functions.https.onRequest(async (_, response) => {
       .doc(player.partyId)
       .set(updatedParty);
 
-    playersRemoved.push(player);
+    removedPlayers.push(player);
 
     log(`Info: removing player ${player.uid} from keepalive...`);
     const keepalive = keepAliveRecords.find(r => r.id === player.partyId);
@@ -122,7 +122,7 @@ export const purgePlayers = functions.https.onRequest(async (_, response) => {
 
   response.send({
     result: 'OK',
-    playersRemoved,
-    playersActive: playersWithKeepAlive.length - playersRemoved.length,
+    removedPlayers,
+    activePlayers: playersWithKeepAlive.length - removedPlayers.length,
   });
 });
