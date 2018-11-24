@@ -13,7 +13,7 @@ export default async ({ db, logger, getCurrentDate, keepAliveThreshold }) => {
 
   logger.log('Info: players with keep alive:', playersWithKeepAlive.length);
 
-  const playersRemoved = [];
+  const removedPlayers = [];
 
   for (const player of playersWithKeepAlive) {
     const msFromLastKeepalive =
@@ -46,7 +46,7 @@ export default async ({ db, logger, getCurrentDate, keepAliveThreshold }) => {
     logger.log(`Info: player ${player.uid} will be removed from party`);
     await db.updatePlayersInParty(player.partyId, remainingPlayers);
 
-    playersRemoved.push(player);
+    removedPlayers.push(player);
 
     logger.log(`Info: removing player ${player.uid} from keepalive...`);
     const keepalive = keepAliveRecords.find(r => r.id === player.partyId);
@@ -68,7 +68,7 @@ export default async ({ db, logger, getCurrentDate, keepAliveThreshold }) => {
 
   return {
     result: 'OK',
-    playersRemoved,
-    playersActive: playersWithKeepAlive.length - playersRemoved.length,
+    removedPlayers,
+    activePlayers: playersWithKeepAlive.length - removedPlayers.length,
   };
 };
