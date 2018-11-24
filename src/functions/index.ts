@@ -1,5 +1,5 @@
 import * as functions from 'firebase-functions';
-import Db from './db';
+import Db from '../db';
 
 const keepAliveThreshold = 15000;
 const currentDate = () => new Date();
@@ -45,7 +45,7 @@ export const purgePlayers = functions.https.onRequest(async (_, response) => {
     };
   });
 
-  log('Info: players with keep alive', playersWithKeepAlive.length);
+  log('Info: players with keep alive:', playersWithKeepAlive.length);
 
   const removedPlayers = [];
 
